@@ -1,0 +1,71 @@
+name: Build OxiDNS Release
+
+# Thin shell: reads build.config.yml and forwards the parameters to the
+# reusable workflow hosted in the upstream svenshi/oxidns repo.
+#
+# The build matrix / naming / packaging logic all live upstream in
+# .github/workflows/custom-build.yml — pipeline improvements there
+# propagate without touching this repo.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Upstream oxidns release tag (e.g. v1.2.0)'
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Upstream oxidns release tag (e.g. v1.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  # Parse build.config.yml into the inputs expected by the upstream
+  # reusable workflow.
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      bundle:   ${{ steps.read.outputs.bundle }}
+      features: ${{ steps.read.outputs.features }}
+      targets:  ${{ steps.read.outputs.targets }}
+      upx:      ${{ steps.read.outputs.upx }}
+      make_deb: ${{ steps.read.outputs.make_deb }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - id: read
+        run: |
+          set -euo pipefail
+          {
+            echo "bundle=$(yq '.bundle' build.config.yml)"
+            echo "features=$(yq -r '.features // [] | join(",")' build.config.yml)"
+            echo "targets=$(yq -o=json -I=0 '.targets' build.config.yml)"
+            echo "upx=$(yq '.upx' build.config.yml)"
+            echo "make_deb=$(yq '.make_deb' build.config.yml)"
+          } >> "$GITHUB_OUTPUT"
+
+  # Call the upstream reusable workflow. `github.repository` and
+  # `GITHUB_TOKEN` belong to the caller (this repo), so the release is
+  # published into this repo automatically.
+  build:
+    needs: config
+    uses: svenshi/oxidns/.github/workflows/custom-build.yml@main
+    with:
+      tag:      ${{ inputs.tag }}
+      bundle:   ${{ needs.config.outputs.bundle }}
+      features: ${{ needs.config.outputs.features }}
+      targets:  ${{ needs.config.outputs.targets }}
+      upx:      ${{ fromJson(needs.config.outputs.upx) }}
+      make_deb: ${{ fromJson(needs.config.outputs.make_deb) }}
+    secrets: inherit

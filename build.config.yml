@@ -1,0 +1,78 @@
+# =============================================================================
+# OxiDNS custom build configuration
+# =============================================================================
+# This is the only file you need to edit in the template repo. Push to main
+# and `watch-upstream.yml` will automatically rebuild on every upstream
+# release.
+#
+# You can also trigger "Build OxiDNS Release" manually from the Actions tab.
+# =============================================================================
+
+# Upstream oxidns repository. Usually no need to change.
+upstream: svenshi/oxidns
+
+# Which bundle to build — determines the asset filename and whether the
+# archive contains the WebUI.
+#
+#   full      = oxidns-{target}.tar.gz           (with webui)
+#   standard  = oxidns-standard-{target}.tar.gz  (with webui)
+#   minimal   = oxidns-minimal-{target}.tar.gz   (no webui)
+#   custom    = oxidns-{target}.tar.gz           (your own features, same filename as full)
+#
+# In `custom` mode, `oxidns upgrade` must be invoked with `--bundle full` or
+# `--asset <name>`. `--bundle auto` refuses to run when PRIMARY_BUNDLE=custom.
+bundle: custom
+
+# Only used when `bundle: custom`. A list of Cargo feature names matching the
+# [features] section in upstream oxidns Cargo.toml. Common combinations:
+#
+#   - Home router (with webui):
+#       [api, webui, server-doh, server-dot, upstream-doh, upstream-dot,
+#        plugin-cron, plugin-dynamic-domain, provider-protobuf,
+#        provider-adguard-rule, plugin-upgrade]
+#
+#   - Slim forwarder (no webui, smallest size):
+#       [minimal]
+#
+#   - Standard + extra plugins:
+#       [standard, plugin-mikrotik, plugin-ipset]
+features:
+  - api
+  - webui
+  - metrics
+  - server-dot
+  - server-doh
+  - upstream-dot
+  - upstream-doh
+  - upstream-doq
+  - provider-protobuf
+  - provider-adguard-rule
+  - plugin-cron
+  - plugin-dynamic-domain
+  - plugin-upgrade
+  - plugin-download
+
+# Target triples to build. Comment out targets you don't need to speed up CI.
+# Must use the triples officially supported by upstream oxidns, otherwise
+# `oxidns upgrade` will not be able to find the asset.
+targets:
+  - x86_64-unknown-linux-gnu
+  - x86_64-unknown-linux-musl
+  - aarch64-unknown-linux-gnu
+  - aarch64-unknown-linux-musl
+  # - i686-unknown-linux-musl
+  # - arm-unknown-linux-musleabihf
+  - x86_64-apple-darwin
+  - aarch64-apple-darwin
+  # - x86_64-unknown-freebsd
+  - x86_64-pc-windows-msvc
+  # - i686-pc-windows-msvc
+  # - aarch64-pc-windows-msvc
+
+# Run UPX on the produced binary (Linux/Windows only; macOS/FreeBSD skipped).
+# Matches upstream default. UPX failures do not fail the pipeline.
+upx: true
+
+# Also produce .deb packages (only for x86_64-unknown-linux-gnu and
+# aarch64-unknown-linux-gnu).
+make_deb: false

@@ -1,0 +1,74 @@
+name: Watch Upstream
+
+# Polls the upstream oxidns repo's latest release every 30 minutes. When a
+# new version is detected, triggers build.yml and produces a matching
+# release in this repo with the same tag as upstream.
+#
+# Manual workflow_dispatch (force: true) re-resolves the latest release
+# and rebuilds it — handy for first-time setup or recovering from a failed
+# previous run.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force rebuild even if this repo already has the tag'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      new: ${{ steps.check.outputs.new }}
+      tag: ${{ steps.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
+        run: |
+          set -euo pipefail
+          UPSTREAM=$(yq '.upstream' build.config.yml)
+          echo "upstream=$UPSTREAM"
+
+          LATEST=$(gh release view --repo "$UPSTREAM" --json tagName -q .tagName 2>/dev/null || true)
+          if [ -z "$LATEST" ]; then
+            echo "::notice::upstream $UPSTREAM has no releases yet — skipping."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "latest=$LATEST"
+
+          LAST_BUILT=$(gh release view --repo "${{ github.repository }}" \
+            "$LATEST" --json tagName -q .tagName 2>/dev/null || echo "")
+          echo "last_built=$LAST_BUILT"
+
+          if [ -z "$LAST_BUILT" ] || [ "$FORCE" = "true" ]; then
+            echo "new=true"  >> "$GITHUB_OUTPUT"
+            echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  trigger:
+    needs: detect
+    if: needs.detect.outputs.new == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      tag: ${{ needs.detect.outputs.tag }}
+    permissions:
+      contents: write
