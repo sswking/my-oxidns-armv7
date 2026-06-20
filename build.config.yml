@@ -51,22 +51,30 @@ features:
   - plugin-dynamic-domain
   - plugin-upgrade
   - plugin-download
+  - plugin-query-record    # 🌟 核心：找回 SQLite 查询日志，让面板的请求列表亮起来
+
+  # --- 3. 上游协议支持 (必须) ---
+  - upstream-doh           # 核心：你的 forward_USA 用了 https://8.8.8.8/dns-query，必须有它
+  # - upstream-dot         # (可选) 如果你以后想把海外上游换成 tls://8.8.8.8，可以取消这行的注释
+
+  # --- 4. 路由与防污染数据引擎 (必须) ---
+  - provider-protobuf
 
 # Target triples to build. Comment out targets you don't need to speed up CI.
 # Must use the triples officially supported by upstream oxidns, otherwise
 # `oxidns upgrade` will not be able to find the asset.
 targets:
   - armv7-unknown-linux-gnueabihf
-  - x86_64-unknown-linux-gnu
-  - x86_64-unknown-linux-musl
-  - aarch64-unknown-linux-gnu
-  - aarch64-unknown-linux-musl
+  #- x86_64-unknown-linux-gnu
+  #- x86_64-unknown-linux-musl
+  #- aarch64-unknown-linux-gnu
+  #- aarch64-unknown-linux-musl
   # - i686-unknown-linux-musl
   # - arm-unknown-linux-musleabihf
-  - x86_64-apple-darwin
-  - aarch64-apple-darwin
+  #- x86_64-apple-darwin
+  #- aarch64-apple-darwin
   # - x86_64-unknown-freebsd
-  - x86_64-pc-windows-msvc
+  #- x86_64-pc-windows-msvc
   # - i686-pc-windows-msvc
   # - aarch64-pc-windows-msvc
 
