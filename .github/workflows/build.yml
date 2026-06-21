@@ -28,7 +28,7 @@ jobs:
   # Parse build.config.yml into the inputs expected by the upstream
   # reusable workflow.
   config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       bundle:   ${{ steps.read.outputs.bundle }}
       features: ${{ steps.read.outputs.features }}
