@@ -60,7 +60,7 @@ jobs:
   # published into this repo automatically.
   build:
     needs: config
-    uses: svenshi/oxidns/.github/workflows/custom-build.yml@main
+    uses: sswking/oxidns/.github/workflows/custom-build.yml@main
     with:
       tag:      ${{ inputs.tag }}
       bundle:   ${{ needs.config.outputs.bundle }}
