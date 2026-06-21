@@ -21,7 +21,7 @@ upstream: svenshi/oxidns
 #
 # In `custom` mode, `oxidns upgrade` must be invoked with `--bundle full` or
 # `--asset <name>`. `--bundle auto` refuses to run when PRIMARY_BUNDLE=custom.
-bundle: custom
+bundle: full
 
 # Only used when `bundle: custom`. A list of Cargo feature names matching the
 # [features] section in upstream oxidns Cargo.toml. Common combinations:
